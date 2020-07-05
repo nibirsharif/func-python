@@ -1,0 +1,57 @@
+data:
+  AzureWebJobsStorage: RGVmYXVsdEVuZHBvaW50c1Byb3RvY29sPWh0dHBzO0FjY291bnROYW1lPXNuaWJpcmtlZGFzdG9yO0FjY291bnRLZXk9QzFJaG9ud0JodUdBdnlwelppUWFFRUNhMzUzRGRBT3YwRUszQk5kWEZ0UmZZMDVYMFU3S3dFRjdEbUVPeE0vYllHcVNzOUVQanZUL0FQMUNMVHkzYnc9PTtFbmRwb2ludFN1ZmZpeD1jb3JlLndpbmRvd3MubmV0
+  FUNCTIONS_WORKER_RUNTIME: cHl0aG9u
+  snibirkedastor_STORAGE: RGVmYXVsdEVuZHBvaW50c1Byb3RvY29sPWh0dHBzO0FjY291bnROYW1lPXNuaWJpcmtlZGFzdG9yO0FjY291bnRLZXk9QzFJaG9ud0JodUdBdnlwelppUWFFRUNhMzUzRGRBT3YwRUszQk5kWEZ0UmZZMDVYMFU3S3dFRjdEbUVPeE0vYllHcVNzOUVQanZUL0FQMUNMVHkzYnc9PTtFbmRwb2ludFN1ZmZpeD1jb3JlLndpbmRvd3MubmV0
+apiVersion: v1
+kind: Secret
+metadata:
+  name: func-python
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: func-python
+  namespace: default
+  labels:
+    app: func-python
+spec:
+  selector:
+    matchLabels:
+      app: func-python
+  template:
+    metadata:
+      labels:
+        app: func-python
+    spec:
+      containers:
+      - name: func-python
+        image: nibirsharif/func-python
+        env:
+        - name: AzureFunctionsJobHost__functions__0
+          value: BlobTrigger
+        envFrom:
+        - secretRef:
+            name: func-python
+---
+apiVersion: keda.k8s.io/v1alpha1
+kind: ScaledObject
+metadata:
+  name: func-python
+  namespace: default
+  labels:
+    deploymentName: func-python
+spec:
+  scaleTargetRef:
+    deploymentName: func-python
+  triggers:
+  - type: azure-blob
+    metadata:
+      name: myblob
+      blobCount: "1"
+      type: blobTrigger
+      direction: in
+      path: images/{name}
+      connection: snibirkedastor_STORAGE
+---
+
